@@ -1,0 +1,17 @@
+{
+  "name": "PharmaVerify — Medicine Authenticator",
+  "short_name": "PharmaVerify",
+  "description": "Verify your medicine is authentic using blockchain",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#4f8ef7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
