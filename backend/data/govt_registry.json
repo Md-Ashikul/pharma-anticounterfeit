@@ -1,0 +1,44 @@
+{
+  "entities": [
+    {
+      "id": "ENT-001",
+      "name": "PharmaCorp Ltd",
+      "licenseNumber": "MFG-001",
+      "licenseStatus": "Active",
+      "role": "Manufacturer",
+      "walletAddress": "0xF4A4b36D818804720b3443438eBdA1aB01AfF22e",
+      "registeredAt": "2026-04-01T00:00:00.000Z",
+      "revokedAt": null
+    },
+    {
+      "id": "ENT-002",
+      "name": "DistribHub Inc",
+      "licenseNumber": "DIST-001",
+      "licenseStatus": "Active",
+      "role": "Distributor",
+      "walletAddress": "0xAcb9bf874Cc3eA2a67cb94a60575192CEfeF831b",
+      "registeredAt": "2026-04-01T00:00:00.000Z",
+      "revokedAt": null
+    },
+    {
+      "id": "ENT-003",
+      "name": "RetailMed Co",
+      "licenseNumber": "RET-001",
+      "licenseStatus": "Active",
+      "role": "Retailer",
+      "walletAddress": "0x4dEE81d53d984F6B1F3d6Ca9c4F2023E825E939F",
+      "registeredAt": "2026-04-01T00:00:00.000Z",
+      "revokedAt": null
+    },
+    {
+      "id": "ENT-004",
+      "name": "RetailerBD-Pharma",
+      "licenseNumber": "RET-002",
+      "licenseStatus": "Active",
+      "role": "Retailer",
+      "walletAddress": "0xD528413aa036E01b86D416c38887E2F68889cF64",
+      "registeredAt": "2026-05-02T08:00:15.172Z",
+      "revokedAt": null
+    }
+  ]
+}

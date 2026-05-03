@@ -1,0 +1,214 @@
+const express  = require("express");
+const { v4: uuidv4 } = require("uuid");
+const { getGovernmentRegistry, getGovSigner } = require("../config/contracts");
+const govDB    = require("../db/govRegistry");
+const anomalyDB = require("../db/anomalyLog");
+const consumptionDB = require("../db/consumptionLog");
+
+const router = express.Router();
+
+/**
+ * GET /api/government/entities
+ * List all registered entities (from JSON mock DB).
+ */
+router.get("/entities", async (req, res) => {
+  try {
+    const role     = req.query.role || null;
+    const entities = govDB.getAllEntities(role);
+    res.json({ success: true, count: entities.length, entities });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/government/entities/:wallet
+ * Get a single entity by wallet address — checks BOTH chain and DB.
+ */
+router.get("/entities/:wallet", async (req, res) => {
+  try {
+    const { wallet } = req.params;
+    const registry   = getGovernmentRegistry();
+
+    // Primary: on-chain
+    const onChain   = await registry.getEntity(wallet);
+    // Secondary: JSON DB
+    const inDB      = govDB.findByWallet(wallet);
+
+    res.json({
+      success: true,
+      onChain: {
+        name:          onChain.name,
+        licenseNumber: onChain.licenseNumber,
+        role:          Number(onChain.role),
+        status:        Number(onChain.status),
+        registeredAt:  Number(onChain.registeredAt),
+        revokedAt:     Number(onChain.revokedAt),
+      },
+      offChain: inDB,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/government/entities/register
+ * Register a new entity on-chain + in mock DB.
+ * Body: { wallet, name, licenseNumber, role (1|2|3) }
+ */
+router.post("/entities/register", async (req, res) => {
+  try {
+    const { wallet, name, licenseNumber, role } = req.body;
+
+    if (!wallet || !name || !licenseNumber || !role) {
+      return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+
+    const registry = getGovernmentRegistry(getGovSigner());
+    const tx       = await registry.registerEntity(wallet, name, licenseNumber, role);
+    const receipt  = await tx.wait();
+
+    // Mirror to JSON DB
+    const roleNames = { 1: "Manufacturer", 2: "Distributor", 3: "Retailer" };
+    govDB.addEntity({
+      id:             uuidv4(),
+      name,
+      licenseNumber,
+      licenseStatus:  "Active",
+      role:           roleNames[role] || "Unknown",
+      walletAddress:  wallet,
+      registeredAt:   new Date().toISOString(),
+      revokedAt:      null,
+    });
+
+    res.json({
+      success: true,
+      message: "Entity registered successfully",
+      txHash:  receipt.hash,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/government/entities/revoke
+ * Revoke an entity's license on-chain + update mock DB.
+ * Body: { wallet, reason }
+ */
+router.post("/entities/revoke", async (req, res) => {
+  try {
+    const { wallet, reason } = req.body;
+    if (!wallet || !reason) {
+      return res.status(400).json({ success: false, error: "Missing wallet or reason" });
+    }
+
+    const registry = getGovernmentRegistry(getGovSigner());
+    const tx       = await registry.revokeEntity(wallet, reason);
+    const receipt  = await tx.wait();
+
+    // Mirror to JSON DB
+    govDB.updateStatus(wallet, "Revoked", new Date().toISOString());
+
+    res.json({
+      success: true,
+      message: "Entity revoked successfully",
+      txHash:  receipt.hash,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/government/entities/reinstate
+ * Reinstate a revoked entity.
+ * Body: { wallet }
+ */
+router.post("/entities/reinstate", async (req, res) => {
+  try {
+    const { wallet } = req.body;
+    if (!wallet) {
+      return res.status(400).json({ success: false, error: "Missing wallet" });
+    }
+
+    const registry = getGovernmentRegistry(getGovSigner());
+    const tx       = await registry.reinstateEntity(wallet);
+    const receipt  = await tx.wait();
+
+    govDB.updateStatus(wallet, "Active", null);
+
+    res.json({
+      success: true,
+      message: "Entity reinstated successfully",
+      txHash:  receipt.hash,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/government/analytics
+ * Government dashboard: consumption stats + anomaly counts.
+ */
+router.get("/analytics", async (req, res) => {
+  try {
+    const consumptionStats = consumptionDB.getConsumptionStats();
+    const anomalyStats     = anomalyDB.getAnomalyStats();
+    const recentAnomalies  = anomalyDB.getAnomalies({ reviewed: false });
+
+    res.json({
+      success: true,
+      analytics: {
+        consumptionByDrug:   consumptionStats,
+        anomalyCounts:       anomalyStats,
+        unreviewedAnomalies: recentAnomalies.length,
+        recentAnomalies:     recentAnomalies.slice(0, 10),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/government/anomalies
+ * Get anomaly logs with optional filters.
+ * Query: ?type=REPLAY_ATTACK&reviewed=false
+ */
+router.get("/anomalies", async (req, res) => {
+  try {
+    const { type, reviewed, batchId, wallet } = req.query;
+    let anomalies = anomalyDB.getAnomalies({
+      type:     type     || null,
+      reviewed: reviewed !== undefined ? reviewed === "true" : null,
+    });
+
+    // Filter by batchId — for manufacturer-specific view
+    if (batchId) {
+      anomalies = anomalies.filter((a) => a.batchId === batchId);
+    }
+
+    res.json({ success: true, count: anomalies.length, anomalies });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/government/anomalies/:id/review
+ * Mark an anomaly as reviewed.
+ */
+router.patch("/anomalies/:id/review", async (req, res) => {
+  try {
+    const ok = anomalyDB.markReviewed(req.params.id);
+    if (!ok) return res.status(404).json({ success: false, error: "Anomaly not found" });
+    res.json({ success: true, message: "Marked as reviewed" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+module.exports = router;

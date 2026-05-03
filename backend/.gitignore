@@ -1,0 +1,4 @@
+.env
+node_modules/
+data/govt_consumption_log.json
+data/govt_anomaly_logs.json

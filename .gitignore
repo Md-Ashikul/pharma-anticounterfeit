@@ -1,0 +1,23 @@
+# Environment files — NEVER commit these
+**/.env
+**/.env.local
+**/blockchain/.env
+
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/.next/
+**/out/
+**/build/
+
+# Hardhat
+**/artifacts/
+**/cache/
+**/typechain-types/
+
+# Sensitive output
+**/output/
+
+# Logs
+**/npm-debug.log*
