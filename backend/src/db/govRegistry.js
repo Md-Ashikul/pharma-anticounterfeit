@@ -1,68 +1,41 @@
-const fs   = require("fs");
-const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const { Entity } = require("./models");
 
-const DB_PATH = path.join(__dirname, "../../data/govt_registry.json");
-
-function readDB() {
-  const raw = fs.readFileSync(DB_PATH, "utf-8");
-  return JSON.parse(raw);
+async function findByWallet(walletAddress) {
+  return Entity.findOne({
+    walletAddress: { $regex: new RegExp(`^${walletAddress}$`, "i") }
+  }).lean();
 }
 
-function writeDB(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+async function findByLicense(licenseNumber) {
+  return Entity.findOne({ licenseNumber }).lean();
 }
 
-/**
- * Find entity by wallet address (case-insensitive).
- */
-function findByWallet(walletAddress) {
-  const db = readDB();
-  return db.entities.find(
-    (e) => e.walletAddress.toLowerCase() === walletAddress.toLowerCase()
-  ) || null;
+async function getAllEntities(role = null) {
+  const query = role ? { role } : {};
+  return Entity.find(query).lean();
 }
 
-/**
- * Find entity by license number.
- */
-function findByLicense(licenseNumber) {
-  const db = readDB();
-  return db.entities.find((e) => e.licenseNumber === licenseNumber) || null;
+async function addEntity(entity) {
+  const newEntity = new Entity({
+    id:            entity.id || uuidv4(),
+    name:          entity.name,
+    licenseNumber: entity.licenseNumber,
+    licenseStatus: entity.licenseStatus || "Active",
+    role:          entity.role,
+    walletAddress: entity.walletAddress,
+    registeredAt:  entity.registeredAt || new Date().toISOString(),
+    revokedAt:     entity.revokedAt || null,
+  });
+  await newEntity.save();
 }
 
-/**
- * Get all entities, optionally filtered by role.
- */
-function getAllEntities(role = null) {
-  const db = readDB();
-  if (role) return db.entities.filter((e) => e.role === role);
-  return db.entities;
-}
-
-/**
- * Add a new entity to the mock DB.
- * Called after successful on-chain registration.
- */
-function addEntity(entity) {
-  const db = readDB();
-  db.entities.push(entity);
-  writeDB(db);
-}
-
-/**
- * Update an entity's license status.
- * Called after on-chain revocation/reinstatement.
- */
-function updateStatus(walletAddress, status, revokedAt = null) {
-  const db = readDB();
-  const idx = db.entities.findIndex(
-    (e) => e.walletAddress.toLowerCase() === walletAddress.toLowerCase()
+async function updateStatus(walletAddress, status, revokedAt = null) {
+  const result = await Entity.updateOne(
+    { walletAddress: { $regex: new RegExp(`^${walletAddress}$`, "i") } },
+    { $set: { licenseStatus: status, revokedAt } }
   );
-  if (idx === -1) return false;
-  db.entities[idx].licenseStatus = status;
-  db.entities[idx].revokedAt     = revokedAt;
-  writeDB(db);
-  return true;
+  return result.modifiedCount > 0;
 }
 
 module.exports = { findByWallet, findByLicense, getAllEntities, addEntity, updateStatus };

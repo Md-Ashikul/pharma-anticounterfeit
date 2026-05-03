@@ -1,6 +1,10 @@
 require("dotenv").config();
 
 const express     = require("express");
+const { connectDB } = require("./db/mongoose");
+
+// Connect to MongoDB on startup
+connectDB();
 const cors        = require("cors");
 const helmet      = require("helmet");
 const rateLimit   = require("express-rate-limit");
