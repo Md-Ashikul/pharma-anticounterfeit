@@ -36,12 +36,12 @@ const MANUFACTURER_BATCH_ABI = [
 // ─── BATCH CONFIGURATION ─────────────────────────────────────────────────────
 // Edit these values before running for each new batch
 const CONFIG = {
-  batchId:      "COMP-A-B2",            // Unique batch identifier
-  drugName:     "Paracetamol 500mg",    // Human-readable drug name
-  stripCount:   1000,                     // Number of strips (use 10000 for production)
-  expiryDate:   "2027-12-31",           // Drug expiry date (YYYY-MM-DD)
-  appBaseUrl:   process.env.APP_BASE_URL || "http://localhost:3000",
-  outputDir:    path.join(__dirname, "../output", "COMP-A-B1"),
+  batchId:    "COMP-A-B3",
+  drugName:   "Paracetamol 500mg",
+  stripCount: 10,
+  expiryDate: "2027-12-31",
+  appBaseUrl: process.env.APP_BASE_URL,
+  outputDir:  path.join(__dirname, "../output", "COMP-A-B3"),
 };
 // ─────────────────────────────────────────────────────────────────────────────
 

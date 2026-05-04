@@ -1,13 +1,7 @@
 const express = require("express");
 const { authSIWE } = require("../middleware/authSIWE");
 const { roleGuard } = require("../middleware/roleGuard");
-const {
-  registerDrug,
-  distributeDrug,
-  retailDrug,
-  getDrugHistory,
-  getDrugStatus,
-} = require("../services/supplyChainService");
+const { getDrugHistory, getDrugStatus } = require("../services/supplyChainService");
 const { detectAndLogAnomaly } = require("../services/anomalyService");
 
 const router = express.Router();
@@ -17,12 +11,12 @@ const STATUS_LABELS = {
   1: "Manufactured",
   2: "Distributed",
   3: "Retailed",
+  4: "Consumed",
 };
 
 /**
  * GET /api/supply-chain/status/:drugId
- * Public: get current status + full history of a drug strip.
- * Powers the consumer-facing timeline when scanning the Public QR.
+ * Public — no auth needed
  */
 router.get("/status/:drugId", async (req, res) => {
   try {
@@ -49,9 +43,8 @@ router.get("/status/:drugId", async (req, res) => {
 
 /**
  * POST /api/supply-chain/manufacture
- * Manufacturer registers a drug strip into the supply chain.
- * Requires SIWE auth + Manufacturer role.
- * Body: { drugId, location }
+ * Now just validates role — frontend signs transaction directly
+ * Body: { drugId, txHash } ← frontend sends confirmed tx hash
  */
 router.post(
   "/manufacture",
@@ -59,28 +52,22 @@ router.post(
   roleGuard("Manufacturer"),
   async (req, res) => {
     try {
-      const { drugId, location } = req.body;
+      const { drugId, txHash, location } = req.body;
       if (!drugId) {
         return res.status(400).json({ success: false, error: "Missing drugId" });
       }
 
-      const receipt = await registerDrug(req.walletAddress, drugId, location);
+      console.log(`\n[GAS+LATENCY] registerDrug() confirmed by frontend. TxHash: ${txHash}`);
 
       res.json({
         success:  true,
         message:  "Drug registered in supply chain",
         drugId,
-        txHash:   receipt.hash,
+        txHash:   txHash || "signed-by-frontend",
         actor:    req.walletAddress,
         role:     "Manufacturer",
       });
     } catch (err) {
-      detectAndLogAnomaly(err, {
-        drugId:    req.body.drugId,
-        batchId:   req.body.drugId?.split("-S")[0],
-        leafHash:  null,
-        ipAddress: req.ip,
-      });
       res.status(500).json({ success: false, error: err.message });
     }
   }
@@ -88,9 +75,6 @@ router.post(
 
 /**
  * POST /api/supply-chain/distribute
- * Distributor scans Public QR and takes custody.
- * Requires SIWE auth + Distributor role.
- * Body: { drugId, location }
  */
 router.post(
   "/distribute",
@@ -98,28 +82,22 @@ router.post(
   roleGuard("Distributor"),
   async (req, res) => {
     try {
-      const { drugId, location } = req.body;
+      const { drugId, txHash, location } = req.body;
       if (!drugId) {
         return res.status(400).json({ success: false, error: "Missing drugId" });
       }
 
-      const receipt = await distributeDrug(req.walletAddress, drugId, location);
+      console.log(`\n[GAS+LATENCY] distributeDrug() confirmed by frontend. TxHash: ${txHash}`);
 
       res.json({
         success:  true,
         message:  "Distribution recorded on blockchain",
         drugId,
-        txHash:   receipt.hash,
+        txHash:   txHash || "signed-by-frontend",
         actor:    req.walletAddress,
         role:     "Distributor",
       });
     } catch (err) {
-      detectAndLogAnomaly(err, {
-        drugId:    req.body.drugId,
-        batchId:   req.body.drugId?.split("-S")[0],
-        leafHash:  null,
-        ipAddress: req.ip,
-      });
       res.status(500).json({ success: false, error: err.message });
     }
   }
@@ -127,9 +105,6 @@ router.post(
 
 /**
  * POST /api/supply-chain/retail
- * Retailer scans Public QR and takes custody.
- * Requires SIWE auth + Retailer role.
- * Body: { drugId, location }
  */
 router.post(
   "/retail",
@@ -137,28 +112,22 @@ router.post(
   roleGuard("Retailer"),
   async (req, res) => {
     try {
-      const { drugId, location } = req.body;
+      const { drugId, txHash, location } = req.body;
       if (!drugId) {
         return res.status(400).json({ success: false, error: "Missing drugId" });
       }
 
-      const receipt = await retailDrug(req.walletAddress, drugId, location);
+      console.log(`\n[GAS+LATENCY] retailDrug() confirmed by frontend. TxHash: ${txHash}`);
 
       res.json({
         success:  true,
         message:  "Retail handoff recorded on blockchain",
         drugId,
-        txHash:   receipt.hash,
+        txHash:   txHash || "signed-by-frontend",
         actor:    req.walletAddress,
         role:     "Retailer",
       });
     } catch (err) {
-      detectAndLogAnomaly(err, {
-        drugId:    req.body.drugId,
-        batchId:   req.body.drugId?.split("-S")[0],
-        leafHash:  null,
-        ipAddress: req.ip,
-      });
       res.status(500).json({ success: false, error: err.message });
     }
   }
