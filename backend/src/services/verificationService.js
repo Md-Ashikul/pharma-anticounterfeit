@@ -2,10 +2,14 @@ require("dotenv").config();
 
 const { ethers }              = require("ethers");
 const { MerkleTree }          = require("merkletreejs");
+const NodeCache               = require("node-cache"); // <-- INJECTED CACHE
 const { getManufacturerBatch, getGovSigner } = require("../config/contracts");
 const { appendLog }           = require("../db/consumptionLog");
 const { detectAndLogAnomaly } = require("./anomalyService");
 const { consumeDrug }         = require("./supplyChainService");
+
+// <-- INJECTED CACHE INITIALIZATION
+const ipfsCache = new NodeCache({ stdTTL: 86400, checkperiod: 1200 }); 
 
 async function fetchJSON(url) {
   const { default: fetch } = await import("node-fetch");
@@ -39,13 +43,11 @@ async function verifyStrip({
   const t0       = Date.now();
 
   // ── Step 1: Compute leaf hash ─────────────────────────────────────────────
-  // Ensure leafHash is always a proper 32-byte hex string
-  const rawHash  = ethers.keccak256(secret);
   const t1_start = Date.now();
   const leafHash = ethers.keccak256(secret);
   metrics.localHashComputation_ms = Date.now() - t1_start;
   console.log("DEBUG leafHash padded:", leafHash);
-  console.log("DEBUG leafHash length:", leafHash.length); // must be 66 (0x + 64 chars)
+  console.log("DEBUG leafHash length:", leafHash.length);
 
   // ── Step 2: Fetch batch from chain ────────────────────────────────────────
   let batch;
@@ -71,14 +73,24 @@ async function verifyStrip({
 
   // ── Step 3: Download Merkle tree from IPFS ────────────────────────────────
   const t3_start = Date.now();
-  const ipfsUrl  = `${process.env.PINATA_GATEWAY}/${batch.ipfsCID}`;
-  let merkleTree;
-  try {
-    merkleTree = await fetchJSON(ipfsUrl);
-  } catch (err) {
-    throw new Error(`Failed to fetch Merkle tree from IPFS: ${err.message}`);
+  let merkleTree = ipfsCache.get(batch.ipfsCID);
+  let cacheStatus = "MISS";
+
+  if (merkleTree) {
+    console.log(`[CACHE HIT] Merkle tree retrieved from memory for CID: ${batch.ipfsCID}`);
+    cacheStatus = "HIT";
+  } else {
+    console.log(`[CACHE MISS] Fetching Merkle tree from IPFS Gateway...`);
+    const ipfsUrl  = `${process.env.PINATA_GATEWAY}/${batch.ipfsCID}`;
+    try {
+      merkleTree = await fetchJSON(ipfsUrl);
+      ipfsCache.set(batch.ipfsCID, merkleTree); 
+    } catch (err) {
+      throw new Error(`Failed to fetch Merkle tree from IPFS: ${err.message}`);
+    }
   }
   metrics.ipfsRetrieval_ms = Date.now() - t3_start;
+  metrics.cacheStatus = cacheStatus;
 
   // ── Step 4: Get leaf entry ────────────────────────────────────────────────
   const leafEntry = merkleTree.leaves[leafIndex];
@@ -133,7 +145,6 @@ async function verifyStrip({
     expired = now > expiryTime;
 
     // ── Record consumption on SupplyChainTracker ──────────────────────────
-    // drugId format: batchId-S000X
     await consumeDrug(drugId, "Consumer Verified");
 
     // ── Print Research Paper Metrics ─────────────────────────────────────────
@@ -141,7 +152,7 @@ async function verifyStrip({
     console.log("║         VERIFICATION LATENCY METRICS                 ║");
     console.log("╠══════════════════════════════════════════════════════╣");
     console.log(`║  QR Decode & Local Hash Computation : ${String(metrics.localHashComputation_ms + " ms").padEnd(14)}║`);
-    console.log(`║  IPFS Retrieval (Merkle Proof)      : ${String(metrics.ipfsRetrieval_ms + " ms").padEnd(14)}║`);
+    console.log(`║  IPFS Retrieval [${metrics.cacheStatus.padEnd(4)}]              : ${String(metrics.ipfsRetrieval_ms + " ms").padEnd(14)}║`); 
     console.log(`║  Blockchain Verification + Burn     : ${String(metrics.blockchainVerification_ms + " ms").padEnd(14)}║`);
     console.log(`║  Total End-to-End Latency           : ${String(metrics.totalVerification_ms + " ms").padEnd(14)}║`);
     console.log("╠══════════════════════════════════════════════════════╣");
@@ -171,8 +182,7 @@ async function verifyStrip({
             authentic: false, expired: false, status: "ALREADY_USED",
             message: "❌ This QR code has already been used. Possible counterfeit.",
             txHash: null, drugName: batch.drugName, batchId,
-            expiryDate: new Date(Number(batch.expiryDate) * 1000)
-              .toISOString().split("T")[0],
+            expiryDate: new Date(Number(batch.expiryDate) * 1000).toISOString().split("T")[0],
           };
         }
 
@@ -182,8 +192,7 @@ async function verifyStrip({
             authentic: false, expired: false, status: "FAKE",
             message: "❌ Invalid proof. This medicine is likely counterfeit.",
             txHash: null, drugName: batch.drugName, batchId,
-            expiryDate: new Date(Number(batch.expiryDate) * 1000)
-              .toISOString().split("T")[0],
+            expiryDate: new Date(Number(batch.expiryDate) * 1000).toISOString().split("T")[0],
           };
         }
       } catch (decodeErr) {
@@ -198,8 +207,7 @@ async function verifyStrip({
         authentic: false, expired: false, status: "ALREADY_USED",
         message: "❌ This QR code has already been used. Possible counterfeit.",
         txHash: null, drugName: batch.drugName, batchId,
-        expiryDate: new Date(Number(batch.expiryDate) * 1000)
-          .toISOString().split("T")[0],
+        expiryDate: new Date(Number(batch.expiryDate) * 1000).toISOString().split("T")[0],
       };
     }
 
@@ -209,8 +217,7 @@ async function verifyStrip({
         authentic: false, expired: false, status: "FAKE",
         message: "❌ Invalid proof. This medicine is likely counterfeit.",
         txHash: null, drugName: batch.drugName, batchId,
-        expiryDate: new Date(Number(batch.expiryDate) * 1000)
-          .toISOString().split("T")[0],
+        expiryDate: new Date(Number(batch.expiryDate) * 1000).toISOString().split("T")[0],
       };
     }
 
@@ -219,17 +226,10 @@ async function verifyStrip({
   }
 
   // ── Step 7: Log consumption ───────────────────────────────────────────────
-  appendLog({
-    hashedNID,
-    drugPrefix: batchId,
-    batchId,
-    expired,
-    txHash,
-  });
+  appendLog({ hashedNID, drugPrefix: batchId, batchId, expired, txHash });
 
   // ── Step 8: Return result ─────────────────────────────────────────────────
-  const expiryDate = new Date(Number(batch.expiryDate) * 1000)
-    .toISOString().split("T")[0];
+  const expiryDate = new Date(Number(batch.expiryDate) * 1000).toISOString().split("T")[0];
 
   if (expired) {
     return {

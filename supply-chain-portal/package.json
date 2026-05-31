@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:l1": "cross-env NEXT_PUBLIC_ACTIVE_NETWORK=sepolia next dev",
+    "dev:l2": "cross-env NEXT_PUBLIC_ACTIVE_NETWORK=arbitrum next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -18,6 +20,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.5"
   }

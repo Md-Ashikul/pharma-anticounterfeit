@@ -1,8 +1,6 @@
 require("dotenv").config();
 const { ethers } = require("ethers");
 
-// ─── ABIs (only functions the backend needs) ──────────────────────────────────
-
 const GOVERNMENT_REGISTRY_ABI = [
   "function isWhitelisted(address wallet) external view returns (bool)",
   "function hasRole(address wallet, uint8 role) external view returns (bool)",
@@ -42,16 +40,40 @@ const SUPPLY_CHAIN_TRACKER_ABI = [
   "error DrugNotFound(string drugId)",
 ];
 
-// ─── Provider & Signers ───────────────────────────────────────────────────────
-
 let _provider = null;
 let _govSigner = null;
 
 function getProvider() {
   if (!_provider) {
-    _provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    const isArbitrum = process.env.ACTIVE_NETWORK === "arbitrum";
+    const rpcUrl = isArbitrum 
+        ? process.env.ARBITRUM_RPC_URL 
+        : process.env.RPC_URL;
+        
+    console.log(`[Backend RPC] Connecting to ${isArbitrum ? 'Arbitrum Sepolia (L2)' : 'Ethereum Sepolia (L1)'}`);
+    _provider = new ethers.JsonRpcProvider(rpcUrl);
   }
   return _provider;
+}
+
+function resetProvider() {
+  _provider = null;
+  _govSigner = null;
+}
+
+function getNetworkAddresses() {
+  const isArbitrum = process.env.ACTIVE_NETWORK === "arbitrum";
+  return {
+    governmentRegistry: isArbitrum
+      ? process.env.ARBITRUM_GOVERNMENT_REGISTRY_ADDRESS
+      : process.env.GOVERNMENT_REGISTRY_ADDRESS,
+    manufacturerBatch: isArbitrum
+      ? process.env.ARBITRUM_MANUFACTURER_BATCH_ADDRESS
+      : process.env.MANUFACTURER_BATCH_ADDRESS,
+    supplyChainTracker: isArbitrum
+      ? process.env.ARBITRUM_SUPPLY_CHAIN_TRACKER_ADDRESS
+      : process.env.SUPPLY_CHAIN_TRACKER_ADDRESS,
+  };
 }
 
 function getGovSigner() {
@@ -64,35 +86,32 @@ function getGovSigner() {
   return _govSigner;
 }
 
-/**
- * Get a signer from a private key (used for supply chain actors).
- * In production this would be replaced by a proper wallet/relayer.
- */
 function getSignerFromKey(privateKey) {
   return new ethers.Wallet(privateKey, getProvider());
 }
 
-// ─── Contract Instances (read-only) ───────────────────────────────────────────
-
 function getGovernmentRegistry(signerOrProvider = null) {
+  const { governmentRegistry } = getNetworkAddresses();
   return new ethers.Contract(
-    process.env.GOVERNMENT_REGISTRY_ADDRESS,
+    governmentRegistry,
     GOVERNMENT_REGISTRY_ABI,
     signerOrProvider || getProvider()
   );
 }
 
 function getManufacturerBatch(signerOrProvider = null) {
+  const { manufacturerBatch } = getNetworkAddresses();
   return new ethers.Contract(
-    process.env.MANUFACTURER_BATCH_ADDRESS,
+    manufacturerBatch,
     MANUFACTURER_BATCH_ABI,
     signerOrProvider || getProvider()
   );
 }
 
 function getSupplyChainTracker(signerOrProvider = null) {
+  const { supplyChainTracker } = getNetworkAddresses();
   return new ethers.Contract(
-    process.env.SUPPLY_CHAIN_TRACKER_ADDRESS,
+    supplyChainTracker,
     SUPPLY_CHAIN_TRACKER_ABI,
     signerOrProvider || getProvider()
   );
@@ -100,6 +119,8 @@ function getSupplyChainTracker(signerOrProvider = null) {
 
 module.exports = {
   getProvider,
+  resetProvider,
+  getNetworkAddresses,
   getGovSigner,
   getSignerFromKey,
   getGovernmentRegistry,

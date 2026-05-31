@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "echo \"No tests yet\""
+    "dev:l1": "cross-env ACTIVE_NETWORK=sepolia nodemon src/app.js",
+    "dev:l2": "cross-env ACTIVE_NETWORK=arbitrum nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
@@ -21,11 +22,13 @@
     "helmet": "^7.1.0",
     "merkletreejs": "^0.4.0",
     "mongoose": "^8.4.0",
+    "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "siwe": "^2.3.2",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.4"
   }
 }

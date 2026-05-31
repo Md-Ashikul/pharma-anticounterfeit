@@ -21,5 +21,10 @@ module.exports = {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       chainId:  11155111,
     },
+    arbitrumSepolia: {
+      url:      process.env.ARBITRUM_SEPOLIA_RPC_URL,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      chainId:  421614,
+    },
   },
 };

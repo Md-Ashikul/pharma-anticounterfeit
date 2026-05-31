@@ -5,9 +5,15 @@ import { buildSiweMessage } from "@/lib/siwe";
 import { useAuthStore } from "@/lib/store";
 import { govAPI } from "@/lib/api";
 
-const HARDHAT_CHAIN_ID = parseInt(
-  process.env.NEXT_PUBLIC_HARDHAT_CHAIN_ID || "31337"
-);
+// ── Dynamic Layer 1 / Layer 2 Network Toggle Configuration ────────────────
+const ACTIVE_NETWORK = process.env.NEXT_PUBLIC_ACTIVE_NETWORK || "sepolia";
+
+const TARGET_CHAIN_ID = ACTIVE_NETWORK === "arbitrum"
+  ? parseInt(process.env.NEXT_PUBLIC_ARBITRUM_CHAIN_ID || "421614")
+  : parseInt(process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_ID || "11155111");
+
+const NETWORK_NAME = ACTIVE_NETWORK === "arbitrum" ? "Arbitrum Sepolia" : "Ethereum Sepolia";
+// ───────────────────────────────────────────────────────────────────────────
 
 export default function WalletConnect() {
   const { setWallet, setSiweSession, setEntityInfo } = useAuthStore();
@@ -27,15 +33,15 @@ export default function WalletConnect() {
       const address = await signer.getAddress();
 
       const network = await provider.getNetwork();
-      if (Number(network.chainId) !== HARDHAT_CHAIN_ID) {
+      if (Number(network.chainId) !== TARGET_CHAIN_ID) {
         try {
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: `0x${HARDHAT_CHAIN_ID.toString(16)}` }],
+            params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }],
           });
         } catch {
           throw new Error(
-            `Wrong network. Please switch MetaMask to Hardhat (chainId ${HARDHAT_CHAIN_ID}).`
+            `Wrong network. Please switch MetaMask to ${NETWORK_NAME} (chainId ${TARGET_CHAIN_ID}).`
           );
         }
       }
@@ -43,7 +49,7 @@ export default function WalletConnect() {
       setWallet(address);
       setStatus("signing");
 
-      const message = buildSiweMessage(address, HARDHAT_CHAIN_ID);
+      const message = buildSiweMessage(address, TARGET_CHAIN_ID);
       const signature = await signer.signMessage(message);
       setSiweSession(message, signature);
 

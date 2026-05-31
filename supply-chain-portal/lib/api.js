@@ -3,7 +3,13 @@ import { ethers } from "ethers";
 
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
-const TRACKER_ADDRESS = process.env.NEXT_PUBLIC_SUPPLY_CHAIN_TRACKER_ADDRESS;
+// ── Dynamic Layer 1 / Layer 2 Routing Logic ───────────────────────────────
+const ACTIVE_NETWORK = process.env.NEXT_PUBLIC_ACTIVE_NETWORK || "sepolia";
+
+const TRACKER_ADDRESS = ACTIVE_NETWORK === "arbitrum"
+  ? process.env.NEXT_PUBLIC_ARBITRUM_SUPPLY_CHAIN_TRACKER_ADDRESS
+  : process.env.NEXT_PUBLIC_SUPPLY_CHAIN_TRACKER_ADDRESS;
+// ───────────────────────────────────────────────────────────────────────────
 
 const SUPPLY_CHAIN_ABI = [
   "function registerDrug(string drugId, string location) external",
@@ -55,29 +61,35 @@ export const supplyAPI = {
   getStatus: (drugId) => publicClient.get(`/api/supply-chain/status/${drugId}`),
 
   manufacture: async (client, { drugId, location }) => {
+    const startTime = Date.now(); // <-- Captures exact time before MetaMask pops up
     const receipt = await signAndSubmit("registerDrug", drugId, location);
     return client.post("/api/supply-chain/manufacture", {
       drugId,
       location,
       txHash: receipt.hash,
+      startTime, // <-- Sends time to backend for latency math
     });
   },
 
   distribute: async (client, { drugId, location }) => {
+    const startTime = Date.now();
     const receipt = await signAndSubmit("distributeDrug", drugId, location);
     return client.post("/api/supply-chain/distribute", {
       drugId,
       location,
       txHash: receipt.hash,
+      startTime,
     });
   },
 
   retail: async (client, { drugId, location }) => {
+    const startTime = Date.now();
     const receipt = await signAndSubmit("retailDrug", drugId, location);
     return client.post("/api/supply-chain/retail", {
       drugId,
       location,
       txHash: receipt.hash,
+      startTime,
     });
   },
 };

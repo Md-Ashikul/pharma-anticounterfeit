@@ -1,5 +1,6 @@
 /**
  * generateBatch.js — Master Batch Generation Script
+ * Academic/Research Edition with Multi-Network routing support.
  *
  * This is the main script run by a licensed Manufacturer to:
  * 1. Generate secrets for every strip in the batch
@@ -8,19 +9,18 @@
  * 4. Upload tree JSON to IPFS via Pinata → get CID
  * 5. Register the batch on-chain via ManufacturerBatch.sol
  * 6. Generate dual QR codes (Public + Hidden) for every strip
- * 7. Save full batch manifest to output/
+ * 7. Save full batch manifest to output/<network>/<batchId>
  *
  * Usage:
- *   node src/generateBatch.js
- *
- * Configure via environment variables or edit the CONFIG block below.
+ * node src/generateBatch.js sepolia
+ * node src/generateBatch.js arbitrum
  */
 
 require("dotenv").config();
 
-const { ethers }              = require("ethers");
-const fs                      = require("fs");
-const path                    = require("path");
+const { ethers }      = require("ethers");
+const fs              = require("fs");
+const path            = require("path");
 const { generateSecret, keccak256, formatDate } = require("./utils");
 const { buildMerkleTree, generateProof, verifyProof } = require("./merkle");
 const { pinJSONToIPFS, testPinataConnection }         = require("./ipfs");
@@ -33,31 +33,43 @@ const MANUFACTURER_BATCH_ABI = [
   "event BatchRegistered(string indexed batchId, address indexed manufacturer, bytes32 merkleRoot, string ipfsCID, uint256 expiryDate, uint256 timestamp)",
 ];
 
+// ─── PARSE NETWORK ARGUMENT ──────────────────────────────────────────────────
+const targetArg = process.argv[2] ? process.argv[2].toLowerCase() : "sepolia";
+const isArbitrum = targetArg === "arbitrum" || targetArg === "l2";
+const networkLabel = isArbitrum ? "ARBITRUM SEPOLIA (L2)" : "ETHEREUM SEPOLIA (L1)";
+
 // ─── BATCH CONFIGURATION ─────────────────────────────────────────────────────
-// Edit these values before running for each new batch
+// Note: Changed outputDir to include targetArg so L1 and L2 data stay separated
 const CONFIG = {
-  batchId:    "COMP-A-B3",
+  batchId:    "COMP-ARB-B2", 
   drugName:   "Paracetamol 500mg",
   stripCount: 10,
   expiryDate: "2027-12-31",
   appBaseUrl: process.env.APP_BASE_URL,
-  outputDir:  path.join(__dirname, "../output", "COMP-A-B3"),
+  outputDir:  path.join(__dirname, "../output", targetArg, "COMP-ARB-B2"),
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════╗");
-  console.log("║   PHARMA BATCH GENERATION — Step 2          ║");
+  console.log("║   PHARMA BATCH GENERATION — Step 2           ║");
+  console.log(`  TARGET NETWORK: ${networkLabel}`);
   console.log("╚══════════════════════════════════════════════╝\n");
 
-  // ── 0. Validate environment ───────────────────────────────────────────────
-  const requiredEnv = [
-    "PINATA_API_KEY", "PINATA_API_SECRET",
-    "MANUFACTURER_PRIVATE_KEY", "MANUFACTURER_BATCH_ADDRESS", "RPC_URL",
-  ];
+  // ── 0. Resolve Network-Specific Values ─────────────────────────────────────
+  const rpcUrl = isArbitrum ? process.env.ARBITRUM_RPC_URL : process.env.RPC_URL;
+  const contractAddress = isArbitrum 
+    ? process.env.ARBITRUM_MANUFACTURER_BATCH_ADDRESS 
+    : process.env.MANUFACTURER_BATCH_ADDRESS;
+
+  // ── 0.1 Validate environment ───────────────────────────────────────────────
+  const requiredEnv = ["PINATA_API_KEY", "PINATA_API_SECRET", "MANUFACTURER_PRIVATE_KEY"];
   for (const key of requiredEnv) {
-    if (!process.env[key]) throw new Error(`Missing env var: ${key}`);
+    if (!process.env[key]) throw new Error(`Missing global env var: ${key}`);
   }
+
+  if (!rpcUrl) throw new Error(`Missing RPC URL for track: ${targetArg}`);
+  if (!contractAddress) throw new Error(`Missing ManufacturerBatch contract address for track: ${targetArg}`);
 
   // ── 1. Test Pinata connection ─────────────────────────────────────────────
   console.log("[ 1/7 ] Testing Pinata IPFS connection...");
@@ -91,30 +103,44 @@ async function main() {
   console.log(`        🔗 https://gateway.pinata.cloud/ipfs/${ipfsCID}\n`);
 
   // ── 5. Register batch on-chain ────────────────────────────────────────────
-  console.log("[ 5/7 ] Registering batch on ManufacturerBatch.sol...");
+  console.log(`[ 5/7 ] Registering batch on ManufacturerBatch.sol [${targetArg}]...`);
+  console.log(`        Target Contract: ${contractAddress}`);
 
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
   const wallet   = new ethers.Wallet(process.env.MANUFACTURER_PRIVATE_KEY, provider);
-
-  const contract = new ethers.Contract(
-    process.env.MANUFACTURER_BATCH_ADDRESS,
-    MANUFACTURER_BATCH_ABI,
-    wallet
-  );
+  const contract = new ethers.Contract(contractAddress, MANUFACTURER_BATCH_ABI, wallet);
 
   // Convert expiry date string to Unix timestamp
   const expiryTimestamp = Math.floor(new Date(CONFIG.expiryDate).getTime() / 1000);
 
-  const tx = await contract.registerBatch(
-    CONFIG.batchId,
-    merkleRoot,
-    ipfsCID,
-    expiryTimestamp,
-    CONFIG.drugName
-  );
+  // Send registration transaction with robust error catching for Custom Errors
+  let tx;
+  try {
+    tx = await contract.registerBatch(
+      CONFIG.batchId,
+      merkleRoot,
+      ipfsCID,
+      expiryTimestamp,
+      CONFIG.drugName
+    );
+    console.log(`        📡 Transaction sent: ${tx.hash}`);
+    console.log(`        ⏳ Awaiting block inclusion confirmations...`);
+  } catch (err) {
+    console.error(`\n❌ Transaction initialization failed.`);
+    if (err.data || err.error) {
+      console.error(`💡 Smart Contract Reverted. Raw Data: ${err.data || JSON.stringify(err.error)}`);
+      console.error(`Ensure this Manufacturer wallet is fully whitelisted on this specific network's GovernmentRegistry.`);
+    } else {
+      console.error(`Error Details: ${err.shortMessage || err.message}`);
+    }
+    process.exit(1);
+  }
 
-  console.log(`        ⏳ Transaction sent: ${tx.hash}`);
   const receipt = await tx.wait();
+  if (receipt.status === 0) {
+    throw new Error("Transaction execution was reverted on-chain by the EVM runtime.");
+  }
+
   console.log(`        ✅ Confirmed in block ${receipt.blockNumber}`);
   console.log(`        ✅ Gas used: ${receipt.gasUsed.toString()}\n`);
 
@@ -160,6 +186,7 @@ async function main() {
   console.log("[ 7/7 ] Saving batch manifest...");
 
   const manifest = {
+    network:        targetArg,
     batchId:        CONFIG.batchId,
     drugName:       CONFIG.drugName,
     merkleRoot,
@@ -172,7 +199,7 @@ async function main() {
     txHash:         tx.hash,
     blockNumber:    receipt.blockNumber,
     manufacturer:   wallet.address,
-    contractAddress: process.env.MANUFACTURER_BATCH_ADDRESS,
+    contractAddress: contractAddress,
     strips,         // Full strip data — keep this file SECURE (contains secrets)
   };
 
@@ -182,6 +209,7 @@ async function main() {
 
   // Also save a public-safe summary (no secrets)
   const publicSummary = {
+    network:        targetArg,
     batchId:        manifest.batchId,
     drugName:       manifest.drugName,
     merkleRoot:     manifest.merkleRoot,
@@ -202,6 +230,7 @@ async function main() {
   console.log("\n╔══════════════════════════════════════════════╗");
   console.log("║   BATCH GENERATION COMPLETE ✅               ║");
   console.log("╚══════════════════════════════════════════════╝");
+  console.log(`  Network     : ${networkLabel}`);
   console.log(`  Batch ID    : ${CONFIG.batchId}`);
   console.log(`  Drug        : ${CONFIG.drugName}`);
   console.log(`  Strips      : ${CONFIG.stripCount}`);
@@ -213,6 +242,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("\n❌ Batch generation failed:", err.message);
+  console.error("\n❌ Critical Failure During Batch Processing Loop:", err.message);
   process.exit(1);
 });
