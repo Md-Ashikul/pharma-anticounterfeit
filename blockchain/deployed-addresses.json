@@ -1,6 +1,9 @@
 {
-  "GovernmentRegistry": "0x799fFAFede91b7Ba71957Ae73D04286aE3Db4fb2",
-  "ManufacturerBatch": "0x19e7Fae71F8aF0462B1B6467457f7f52AB98601F",
-  "SupplyChainTracker": "0x0faa6279142943eCCD4501A7D4AF87798A1AdD15",
-  "deployedAt": "2026-05-24T06:10:34.316Z"
+  "sepolia": {
+    "GovernmentRegistry": "0x799fFAFede91b7Ba71957Ae73D04286aE3Db4fb2",
+    "ManufacturerBatch": "0x19e7Fae71F8aF0462B1B6467457f7f52AB98601F",
+    "SupplyChainTracker": "0x0faa6279142943eCCD4501A7D4AF87798A1AdD15",
+    "chainId": 11155111,
+    "deployedAt": "2026-05-24T06:10:34.316Z"
+  }
 }
