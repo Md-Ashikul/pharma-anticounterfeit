@@ -46,6 +46,96 @@ GOVERNMENT DASHBOARD → monitors nationwide
 
 ---
 
+## 🏛️ M-of-N Consortium Governance
+
+**PharmaChain now supports decentralized regulatory authority via multi-signature voting.**
+
+Instead of a single government wallet making unilateral decisions, the system allows **N regulatory bodies** (e.g., national regulators, state boards, industry councils) to vote on critical actions. A proposal executes only when **M-of-N approvals** are reached.
+
+### Key Features
+
+- **Multi-Regulator Voting**: Any regulator can propose an action (register/revoke/reinstate entity, add/remove regulators).
+- **Threshold-Based Execution**: Proposals auto-execute when approvals ≥ M. No manual execute step required.
+- **Vote Changes Allowed**: Regulators can change their vote; the system recalculates and auto-executes if threshold met.
+- **7-Day Expiry**: Stale proposals automatically expire, preventing orphaned votes.
+- **Transparent Audit Trail**: All proposals and votes emit blockchain events for compliance auditing.
+
+### Example Flow (2-of-3 Scenario)
+
+```
+Regulator 1 proposes: Register Manufacturer X
+  → Regulator 1 auto-votes YES (1/2)
+
+Regulator 2 votes YES
+  → Threshold met (2/2) → Proposal auto-executes
+  → Manufacturer X registered on-chain ✓
+
+Regulator 3 votes NO (too late; already executed)
+```
+
+### Smart Contract Functions
+
+**Proposal Creation** (Any regulator)
+```solidity
+proposeRegisterEntity(wallet, name, licenseNumber, role)
+proposeRevokeEntity(wallet, reason)
+proposeReinstateEntity(wallet)
+proposeAddRegulator(newRegulator)
+proposeRemoveRegulator(regulatorToRemove)
+```
+
+**Voting** (Any regulator)
+```solidity
+voteOnProposal(proposalId, voteChoice: true/false)
+  // Auto-executes if threshold reached
+```
+
+**Governance Admin** (Owner/deployer only)
+```solidity
+initializeGovernance(regulators[], threshold)
+  // Called once post-deploy to set up M-of-N
+```
+
+### Backend API Endpoints
+
+```http
+GET  /api/government/governance/status                     — Current governance config
+POST /api/government/governance/initialize                — Initialize M-of-N (owner only)
+
+POST /api/government/entities/propose/register            — Propose entity registration
+POST /api/government/entities/propose/revoke              — Propose entity revocation
+POST /api/government/entities/propose/reinstate           — Propose entity reinstatement
+
+POST /api/government/governance/proposals/:id/vote        — Vote on proposal
+GET  /api/government/governance/proposals/:id             — Get proposal details
+
+POST /api/government/governance/propose/add-regulator     — Propose adding regulator
+POST /api/government/governance/propose/remove-regulator  — Propose removing regulator
+```
+
+### Deployment with Governance
+
+When you deploy to Arbitrum (or any network), use environment variables to define regulators:
+
+```bash
+# blockchain/.env
+GOVERNANCE_REGULATORS='["0x111...","0x222...","0x333..."]'
+GOVERNANCE_THRESHOLD=2
+```
+
+The deploy script will automatically initialize governance with these values. If omitted, the deployer becomes the single regulator (1-of-1), maintaining backward compatibility.
+
+### Testing Governance
+
+```bash
+cd blockchain
+npx hardhat run scripts/test-governance.js --network arbitrumSepolia
+```
+
+This script demonstrates the full voting flow: propose → vote → auto-execute → verify.
+
+---
+
 ## 🔐 Smart Contracts (Sepolia Testnet)
 
 | Contract | Address |
