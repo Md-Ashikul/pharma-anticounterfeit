@@ -20,34 +20,65 @@ You now have **M-of-N blockchain voting** for regulatory approvals. Deploy to Ar
 
 ## 🚀 Deploy to Arbitrum (5 minutes)
 
-### Step 1: Fund wallet
+### Your Account Setup
+```
+Account 1: Government Regulator (Deployer) ← YOU START HERE
+Account 2: Government Regulator
+Account 3: Government Regulator
+Account 4: Manufacturer
+Account 5: Distributor
+Account 6: Retailer
+```
+
+**See `YOUR_ACCOUNT_SETUP.md` for detailed steps with your specific accounts.**
+
+### Step 1: Fund Account 1
 ```bash
-# Your existing MetaMask Account 1
+# Your MetaMask Account 1 (Deployer)
 # Get test ETH: https://faucet.quicknode.com/arbitrum/sepolia
 ```
 
-### Step 2: Set env vars
+### Step 2: Get Private Key
+```bash
+# MetaMask > Account 1 > ⋯ > Account Details > Export Private Key
+# Copy the key (starts with 0x)
+```
+
+### Step 3: Set env vars
 ```bash
 # blockchain/.env
-DEPLOYER_PRIVATE_KEY=0x...  # from MetaMask
+DEPLOYER_PRIVATE_KEY=0xyour_account_1_private_key
 ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 
-# Optional: Set up M-of-N
-GOVERNANCE_REGULATORS='["0x111...","0x222...","0x333..."]'
+# 2-of-3 Governance Voting
+GOVERNANCE_REGULATORS='["0xAccount1Address","0xAccount2Address","0xAccount3Address"]'
 GOVERNANCE_THRESHOLD=2
 ```
 
-### Step 3: Deploy
+### Step 4: Deploy
 ```bash
 cd blockchain
 npm run deploy:arbitrum
 ```
 
-### Step 4: Update backend
+Prints contract addresses. Copy them.
+
+### Step 5: Update backend
 ```bash
 # backend/.env
 ACTIVE_NETWORK=arbitrum
-ARBITRUM_GOVERNMENT_REGISTRY_ADDRESS=0x...  # from deploy output
+ARBITRUM_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+GOVERNMENT_REGISTRY_ADDRESS=0x...  # from deploy output
+MANUFACTURER_BATCH_ADDRESS=0x...
+SUPPLY_CHAIN_TRACKER_ADDRESS=0x...
+
+# Your Accounts
+GOVERNMENT_PRIVATE_KEY=0xyour_account_1_private_key
+GOVERNMENT_REGULATOR_2=0xAccount2Address
+GOVERNMENT_REGULATOR_3=0xAccount3Address
+MANUFACTURER_ACCOUNT=0xAccount4Address
+DISTRIBUTOR_ACCOUNT=0xAccount5Address
+RETAILER_ACCOUNT=0xAccount6Address
 ARBITRUM_MANUFACTURER_BATCH_ADDRESS=0x...
 ARBITRUM_SUPPLY_CHAIN_TRACKER_ADDRESS=0x...
 ```
