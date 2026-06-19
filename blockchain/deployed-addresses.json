@@ -5,5 +5,12 @@
     "SupplyChainTracker": "0x0faa6279142943eCCD4501A7D4AF87798A1AdD15",
     "chainId": 11155111,
     "deployedAt": "2026-05-24T06:10:34.316Z"
+  },
+  "arbitrumSepolia": {
+    "GovernmentRegistry": "",
+    "ManufacturerBatch": "",
+    "SupplyChainTracker": "",
+    "chainId": 421614,
+    "deployedAt": ""
   }
 }
