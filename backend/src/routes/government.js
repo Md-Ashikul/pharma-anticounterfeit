@@ -1,6 +1,6 @@
 const express  = require("express");
 const { v4: uuidv4 } = require("uuid");
-const { getGovernmentRegistry, getGovSigner } = require("../config/contracts");
+const { getGovernmentRegistry, getGovSigner, getSignerFromKey } = require("../config/contracts");
 const govDB         = require("../db/govRegistry");
 const anomalyDB     = require("../db/anomalyLog");
 const consumptionDB = require("../db/consumptionLog");
@@ -25,7 +25,7 @@ router.get("/governance/status", async (req, res) => {
         success: true,
         initialized: true,
         regulators,
-        threshold,
+        threshold: Number(threshold),
         regulatorCount: regulators.length,
       });
     } catch (err) {
@@ -101,7 +101,7 @@ router.post("/entities/propose/register", async (req, res) => {
   try {
     const { wallet, name, licenseNumber, role } = req.body;
 
-    if (!wallet || !name || !licenseNumber || !role) {
+    if (!wallet || !name || !licenseNumber || role === undefined || role === null || role === "") {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
@@ -225,13 +225,19 @@ router.post("/entities/propose/reinstate", async (req, res) => {
 router.post("/governance/proposals/:id/vote", async (req, res) => {
   try {
     const { id } = req.params;
-    const { vote } = req.body;
+    const { vote, regulatorKey } = req.body;
 
     if (typeof vote !== "boolean") {
       return res.status(400).json({ success: false, error: "vote must be true or false" });
     }
 
-    const registry = getGovernmentRegistry(getGovSigner());
+    // A proposal needs votes from DIFFERENT regulators to reach threshold.
+    // By default we sign with the government signer (Regulator 1). To cast a
+    // vote as another regulator (Account 2 / Account 3), pass their private key
+    // as `regulatorKey` in the request body.
+    const signer = regulatorKey ? getSignerFromKey(regulatorKey) : getGovSigner();
+
+    const registry = getGovernmentRegistry(signer);
     const tx = await registry.voteOnProposal(id, vote);
     const receipt = await tx.wait();
 

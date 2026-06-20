@@ -1,0 +1,40 @@
+{
+  "logs": [
+    {
+      "id": "e2ffa175-8ffc-4259-b3f2-216581744e46",
+      "hashedNID": null,
+      "drugPrefix": "COMP-A-B1",
+      "batchId": "COMP-A-B1",
+      "expired": false,
+      "txHash": "0xd2abf3f29a2921c13b7d5326aeb934ac3a20c3ed53cd8f0c93015d0e49733f00",
+      "timestamp": "2026-04-29T07:10:47.757Z"
+    },
+    {
+      "id": "1dcef9d6-efcf-4df6-acdf-a1a5b90a5030",
+      "hashedNID": null,
+      "drugPrefix": "COMP-A-B2",
+      "batchId": "COMP-A-B2",
+      "expired": false,
+      "txHash": "0x808ff613d12f83bef22e85ccd6c87aba3cec58b998784b615e5b8c1319fa2278",
+      "timestamp": "2026-05-02T07:39:26.967Z"
+    },
+    {
+      "id": "63bdc7f3-c6c1-4f27-93b4-e5de02d4ed7d",
+      "hashedNID": null,
+      "drugPrefix": "COMP-A-B2",
+      "batchId": "COMP-A-B2",
+      "expired": false,
+      "txHash": "0x2fc00500a7d33acaa277bfafaa74db18088721d91e7105b97771b42ce5cb2429",
+      "timestamp": "2026-05-02T08:40:13.616Z"
+    },
+    {
+      "id": "ad429617-8c3d-4c1f-9de9-498711b69005",
+      "hashedNID": null,
+      "drugPrefix": "COMP-A-B2",
+      "batchId": "COMP-A-B2",
+      "expired": false,
+      "txHash": "0x6735e64b702dcd34508c5e670767b0f41d387072620cc17264ea848f6b46aedd",
+      "timestamp": "2026-05-02T22:00:51.229Z"
+    }
+  ]
+}

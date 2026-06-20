@@ -1,5 +1,12 @@
 require("dotenv").config();
 
+// Allow JSON.stringify / res.json to serialize BigInt values returned by
+// ethers v6 (uint256 -> BigInt). Without this, res.json() throws
+// "Do not know how to serialize a BigInt". Converts BigInt to a number string.
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 const express     = require("express");
 const { connectDB } = require("./db/mongoose");
 

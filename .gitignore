@@ -1,7 +1,7 @@
 # Environment files — NEVER commit these
-**/.env
-**/.env.local
-**/blockchain/.env
+#**/.env
+#**/.env.local
+#**/blockchain/.env
 
 # Dependencies
 **/node_modules/
