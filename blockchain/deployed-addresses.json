@@ -1,6 +1,26 @@
 {
-  "GovernmentRegistry": "0x799fFAFede91b7Ba71957Ae73D04286aE3Db4fb2",
-  "ManufacturerBatch": "0x19e7Fae71F8aF0462B1B6467457f7f52AB98601F",
-  "SupplyChainTracker": "0x0faa6279142943eCCD4501A7D4AF87798A1AdD15",
-  "deployedAt": "2026-05-24T06:10:34.316Z"
+  "sepolia": {
+    "GovernmentRegistry": "0x799fFAFede91b7Ba71957Ae73D04286aE3Db4fb2",
+    "ManufacturerBatch": "0x19e7Fae71F8aF0462B1B6467457f7f52AB98601F",
+    "SupplyChainTracker": "0x0faa6279142943eCCD4501A7D4AF87798A1AdD15",
+    "chainId": 11155111,
+    "deployedAt": "2026-05-24T06:10:34.316Z"
+  },
+  "arbitrumSepolia": {
+    "GovernmentRegistry": "0x1d9dA3c125910eFDE30C546e92Ce9F83Cc3ebb23",
+    "ManufacturerBatch": "0xE4FC75AA2543421691305B47824bC0F2A4F3DFB9",
+    "SupplyChainTracker": "0xcB1E0abfE58E61e178776A294A16Ae3d3528bAD0",
+    "chainId": 421614,
+    "deployer": "0x60A05eb194b85eED4233f879af3F98d2d064f9a8",
+    "governance": {
+      "regulators": [
+        "0x60A05eb194b85eED4233f879af3F98d2d064f9a8",
+        "0xF4A4b36D818804720b3443438eBdA1aB01AfF22e",
+        "0xAcb9bf874Cc3eA2a67cb94a60575192CEfeF831b"
+      ],
+      "threshold": 2,
+      "initialized": true
+    },
+    "deployedAt": "2026-06-19T23:34:58.438Z"
+  }
 }
