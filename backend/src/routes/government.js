@@ -25,7 +25,7 @@ router.get("/governance/status", async (req, res) => {
         success: true,
         initialized: true,
         regulators,
-        threshold,
+        threshold: Number(threshold),
         regulatorCount: regulators.length,
       });
     } catch (err) {
