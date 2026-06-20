@@ -16,28 +16,31 @@ const router = express.Router();
 router.get("/governance/status", async (req, res) => {
   try {
     const registry = getGovernmentRegistry();
-    const isInitialized = await registry.isInitialized();
 
-    if (!isInitialized) {
-      return res.json({
+    try {
+      const regulators = await registry.getRegulators();
+      const threshold = await registry.getThreshold();
+
+      res.json({
         success: true,
-        initialized: false,
-        regulators: [],
-        threshold: 0,
-        message: "Governance not yet initialized. Call POST /governance/initialize."
+        initialized: true,
+        regulators,
+        threshold,
+        regulatorCount: regulators.length,
       });
+    } catch (err) {
+      // If governance not initialized, return empty state
+      if (err.message.includes("not initialized") || err.message.includes("NotInitialized")) {
+        return res.json({
+          success: true,
+          initialized: false,
+          regulators: [],
+          threshold: 0,
+          message: "Governance not yet initialized. Call POST /governance/initialize."
+        });
+      }
+      throw err;
     }
-
-    const regulators = await registry.getRegulators();
-    const threshold = await registry.getThreshold();
-
-    res.json({
-      success: true,
-      initialized: true,
-      regulators,
-      threshold,
-      regulatorCount: regulators.length,
-    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
