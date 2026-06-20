@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title GovernmentRegistry
@@ -203,7 +204,7 @@ contract GovernmentRegistry is Ownable {
         proposalId = _createProposal(
             ProposalAction.Register,
             wallet,
-            string(abi.encodePacked(name, "|", licenseNumber, "|", uint256(role)))
+            string(abi.encodePacked(name, "|", licenseNumber, "|", Strings.toString(uint256(role))))
         );
 
         // Proposer auto-votes YES
@@ -503,8 +504,12 @@ contract GovernmentRegistry is Ownable {
     function _parseUint(bytes memory b) internal pure returns (uint256) {
         uint256 result = 0;
         for (uint256 i = 0; i < b.length; i++) {
-            uint8 digit = uint8(b[i]) - 48; // '0' is 48
-            result = result * 10 + digit;
+            uint8 c = uint8(b[i]);
+            // Only accept ASCII digits '0'-'9'; ignore anything else so a
+            // malformed byte can never cause an arithmetic underflow (Panic 0x11).
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
         }
         return result;
     }
