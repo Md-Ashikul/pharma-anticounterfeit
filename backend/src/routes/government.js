@@ -101,7 +101,7 @@ router.post("/entities/propose/register", async (req, res) => {
   try {
     const { wallet, name, licenseNumber, role } = req.body;
 
-    if (!wallet || !name || !licenseNumber || !role) {
+    if (!wallet || !name || !licenseNumber || role === undefined || role === null || role === "") {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
