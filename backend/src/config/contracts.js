@@ -2,13 +2,42 @@ require("dotenv").config();
 const { ethers } = require("ethers");
 
 const GOVERNMENT_REGISTRY_ABI = [
+  // Entity view functions
   "function isWhitelisted(address wallet) external view returns (bool)",
   "function hasRole(address wallet, uint8 role) external view returns (bool)",
   "function getEntity(address wallet) external view returns (tuple(string name, string licenseNumber, uint8 role, uint8 status, uint256 registeredAt, uint256 revokedAt))",
   "function getEntityRoleString(address wallet) external view returns (string)",
-  "function registerEntity(address wallet, string name, string licenseNumber, uint8 role) external",
-  "function revokeEntity(address wallet, string reason) external",
-  "function reinstateEntity(address wallet) external",
+  "function getAllRegisteredAddresses() external view returns (address[])",
+
+  // Governance view functions
+  "function isInitialized() external view returns (bool)",
+  "function getRegulators() external view returns (address[])",
+  "function getThreshold() external view returns (uint256)",
+  "function getProposal(uint256 proposalId) external view returns (tuple(uint256 id, uint8 action, address targetEntity, string proposalData, uint8 status, address proposer, uint256 createdAt, uint256 expiryAt, uint256 executedAt, uint256 approvalsCount) proposal, address[] voters, bool[] voteChoices)",
+  "function hasVoted(uint256 proposalId, address regulator) external view returns (bool)",
+  "function votes(uint256 proposalId, address regulator) external view returns (bool)",
+
+  // Governance init (owner only)
+  "function initializeGovernance(address[] regulators, uint256 threshold) external",
+
+  // Proposal creation (regulators only)
+  "function proposeRegisterEntity(address wallet, string name, string licenseNumber, uint8 role) external returns (uint256)",
+  "function proposeRevokeEntity(address wallet, string reason) external returns (uint256)",
+  "function proposeReinstateEntity(address wallet) external returns (uint256)",
+  "function proposeAddRegulator(address newRegulator) external returns (uint256)",
+  "function proposeRemoveRegulator(address regulatorToRemove) external returns (uint256)",
+
+  // Voting & execution
+  "function voteOnProposal(uint256 proposalId, bool voteChoice) external",
+  "function executeProposalManually(uint256 proposalId) external",
+
+  // Events (needed to parse proposalId from tx receipts)
+  "event ProposalCreated(uint256 indexed proposalId, address indexed proposer, uint8 action, address targetEntity, uint256 createdAt, uint256 expiryAt)",
+  "event ProposalVoted(uint256 indexed proposalId, address indexed regulator, bool voteChoice, uint256 currentApprovals, uint256 threshold)",
+  "event ProposalExecuted(uint256 indexed proposalId, uint8 action, address targetEntity, uint256 executedAt)",
+  "event EntityRegistered(address indexed wallet, string name, string licenseNumber, uint8 role, uint256 timestamp)",
+  "event EntityRevoked(address indexed wallet, string reason, uint256 timestamp)",
+  "event EntityReinstated(address indexed wallet, uint256 timestamp)",
 ];
 
 const MANUFACTURER_BATCH_ABI = [
