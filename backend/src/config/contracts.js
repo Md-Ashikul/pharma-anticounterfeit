@@ -1,73 +1,30 @@
 require("dotenv").config();
 const { ethers } = require("ethers");
 
-const GOVERNMENT_REGISTRY_ABI = [
-  // Entity view functions
-  "function isWhitelisted(address wallet) external view returns (bool)",
-  "function hasRole(address wallet, uint8 role) external view returns (bool)",
-  "function getEntity(address wallet) external view returns (tuple(string name, string licenseNumber, uint8 role, uint8 status, uint256 registeredAt, uint256 revokedAt))",
-  "function getEntityRoleString(address wallet) external view returns (string)",
-  "function getAllRegisteredAddresses() external view returns (address[])",
+// ─────────────────────────────────────────────────────────────────────────────
+// ABIs are loaded directly from the compiled Hardhat artifacts so they ALWAYS
+// match the most recently compiled/deployed contracts. After any contract change
+// run `npx hardhat compile` in the blockchain folder and the backend picks up
+// the new ABI automatically — no manual editing of this file required.
+//
+// NOTE: The blockchain/artifacts folder is git-ignored, so it only exists locally
+// after compiling. If you ever deploy the backend WITHOUT the blockchain folder
+// present (e.g. a standalone backend host), compile first and ship the artifacts,
+// or switch back to inline ABIs.
+// ─────────────────────────────────────────────────────────────────────────────
+const ARTIFACTS_DIR = "../../../blockchain/artifacts/contracts";
 
-  // Governance view functions
-  "function isInitialized() external view returns (bool)",
-  "function getRegulators() external view returns (address[])",
-  "function getThreshold() external view returns (uint256)",
-  "function getProposal(uint256 proposalId) external view returns (tuple(uint256 id, uint8 action, address targetEntity, string proposalData, uint8 status, address proposer, uint256 createdAt, uint256 expiryAt, uint256 executedAt, uint256 approvalsCount) proposal, address[] voters, bool[] voteChoices)",
-  "function hasVoted(uint256 proposalId, address regulator) external view returns (bool)",
-  "function votes(uint256 proposalId, address regulator) external view returns (bool)",
+const GOVERNMENT_REGISTRY_ABI = require(
+  `${ARTIFACTS_DIR}/GovernmentRegistry.sol/GovernmentRegistry.json`
+).abi;
 
-  // Governance init (owner only)
-  "function initializeGovernance(address[] regulators, uint256 threshold) external",
+const MANUFACTURER_BATCH_ABI = require(
+  `${ARTIFACTS_DIR}/ManufacturerBatch.sol/ManufacturerBatch.json`
+).abi;
 
-  // Proposal creation (regulators only)
-  "function proposeRegisterEntity(address wallet, string name, string licenseNumber, uint8 role) external returns (uint256)",
-  "function proposeRevokeEntity(address wallet, string reason) external returns (uint256)",
-  "function proposeReinstateEntity(address wallet) external returns (uint256)",
-  "function proposeAddRegulator(address newRegulator) external returns (uint256)",
-  "function proposeRemoveRegulator(address regulatorToRemove) external returns (uint256)",
-
-  // Voting & execution
-  "function voteOnProposal(uint256 proposalId, bool voteChoice) external",
-  "function executeProposalManually(uint256 proposalId) external",
-
-  // Events (needed to parse proposalId from tx receipts)
-  "event ProposalCreated(uint256 indexed proposalId, address indexed proposer, uint8 action, address targetEntity, uint256 createdAt, uint256 expiryAt)",
-  "event ProposalVoted(uint256 indexed proposalId, address indexed regulator, bool voteChoice, uint256 currentApprovals, uint256 threshold)",
-  "event ProposalExecuted(uint256 indexed proposalId, uint8 action, address targetEntity, uint256 executedAt)",
-  "event EntityRegistered(address indexed wallet, string name, string licenseNumber, uint8 role, uint256 timestamp)",
-  "event EntityRevoked(address indexed wallet, string reason, uint256 timestamp)",
-  "event EntityReinstated(address indexed wallet, uint256 timestamp)",
-];
-
-const MANUFACTURER_BATCH_ABI = [
-  "function getBatch(string batchId) external view returns (tuple(bytes32 merkleRoot, string ipfsCID, uint256 expiryDate, uint256 registeredAt, address manufacturer, string drugName, bool isActive))",
-  "function verifyAndBurn(string batchId, bytes32[] proof, bytes32 leafHash) external returns (bool expired)",
-  "function isLeafConsumed(bytes32 leafHash) external view returns (bool)",
-  "function getManufacturerBatches(address manufacturer) external view returns (string[])",
-  "error StripAlreadyConsumed(bytes32 leafHash)",
-  "error InvalidMerkleProof()",
-  "error BatchNotFound(string batchId)",
-  "error BatchInactive(string batchId)",
-  "error InvalidExpiry()",
-  "error NotAuthorized(address caller)",
-  "error NotAManufacturer(address caller)",
-  "error BatchAlreadyExists(string batchId)",
-];
-
-const SUPPLY_CHAIN_TRACKER_ABI = [
-  "function registerDrug(string drugId, string location) external",
-  "function distributeDrug(string drugId, string location) external",
-  "function retailDrug(string drugId, string location) external",
-  "function consumeDrug(string drugId, string location) external",
-  "function getDrugHistory(string drugId) external view returns (tuple(address actor, string role, uint8 status, uint256 timestamp, string location)[])",
-  "function getDrugStatus(string drugId) external view returns (uint8)",
-  "error OutOfOrderTransition(string drugId, uint8 current, uint8 attempted)",
-  "error NotWhitelisted(address caller)",
-  "error WrongRole(address caller, string expectedRole)",
-  "error DrugAlreadyRegistered(string drugId)",
-  "error DrugNotFound(string drugId)",
-];
+const SUPPLY_CHAIN_TRACKER_ABI = require(
+  `${ARTIFACTS_DIR}/SupplyChainTracker.sol/SupplyChainTracker.json`
+).abi;
 
 let _provider = null;
 let _govSigner = null;
