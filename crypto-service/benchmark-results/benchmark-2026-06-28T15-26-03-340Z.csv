@@ -1,0 +1,3 @@
+Network,Avg gas (estimate),Gas price (gwei),Fee (ETH),Fee (USD),IPFS MISS (ms),Burn latency avg (ms)
+Ethereum Sepolia (L1),62834,1.1095,6.9717e-5,0.110140,6427,13124
+Arbitrum Sepolia (L2),62824,0.0201,1.2633e-6,0.001996,7450,2541

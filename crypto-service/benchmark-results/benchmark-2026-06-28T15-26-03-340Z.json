@@ -1,0 +1,148 @@
+{
+  "ranAt": "2026-06-28T15:26:03.340Z",
+  "ethUsd": 1579.83,
+  "results": [
+    {
+      "network": "sepolia",
+      "label": "Ethereum Sepolia (L1)",
+      "contract": "0xb6216d0d6FCc97d7CC7Aae797262E1AA339013E2",
+      "batchId": "BENCH-SEPOLIA-1782660269793",
+      "ipfsCID": "QmU2DNkovcmfyJi1X64ZjgybHNpwQXK8mzuB1EEHueTZ8p",
+      "stripCount": 64,
+      "register": {
+        "gasUsed": "281852",
+        "latencyMs": 21538,
+        "txHash": "0x1f0bba087b911377e64a3bac644b3b5d2bae2ce26f995a23a70c9e2fdda3b0f4"
+      },
+      "latency": {
+        "localHashComputation_ms": {
+          "min": 0.2447,
+          "max": 0.3673,
+          "avg": 0.2797,
+          "median": 0.25360000000000005
+        },
+        "ipfsRetrieval_miss_ms": 6427,
+        "ipfsRetrieval_hit_ms": 0,
+        "verifyAndBurn_real_ms": {
+          "min": 9028,
+          "max": 17229,
+          "avg": 13124,
+          "median": 13115
+        }
+      },
+      "gas": {
+        "verifyAndBurn_estimate": {
+          "min": 62819,
+          "max": 62851,
+          "avg": 62833.8,
+          "median": 62830
+        },
+        "verifyAndBurn_real": {
+          "min": 62012,
+          "max": 62032,
+          "avg": 62022,
+          "median": 62022
+        },
+        "gasPriceWei": "1109534826",
+        "gasPriceGwei": 1.109534826
+      },
+      "realTxs": [
+        {
+          "leafIndex": 0,
+          "latencyMs": 17229,
+          "gasUsed": 62012,
+          "effectiveGasPriceWei": "1098947952",
+          "txHash": "0x747debca9f98488c5adf536806523346b425aea0ebb3a43370ef894f6e8703f7",
+          "blockNumber": 11159167
+        },
+        {
+          "leafIndex": 1,
+          "latencyMs": 9028,
+          "gasUsed": 62022,
+          "effectiveGasPriceWei": "1126213371",
+          "txHash": "0xc4d028484b6bc054d9d5de60c740f9de527e1dc614d43d1fc1e7f36bfc1bc59f",
+          "blockNumber": 11159168
+        },
+        {
+          "leafIndex": 2,
+          "latencyMs": 13115,
+          "gasUsed": 62032,
+          "effectiveGasPriceWei": "1109534826",
+          "txHash": "0x07f49e9ed5003734880007a6c3865cb22174c7d5dd7646948567478df0d6077e",
+          "blockNumber": 11159169
+        }
+      ]
+    },
+    {
+      "network": "arbitrum",
+      "label": "Arbitrum Sepolia (L2)",
+      "contract": "0x457e47f431EBDa9EfB28F2f05a439CFd01B90Fb1",
+      "batchId": "BENCH-ARBITRUM-1782660340135",
+      "ipfsCID": "QmTHP3rCP2zwa4fwpTmattxN2AxHqy5SDLWYuuvhAqxtxw",
+      "stripCount": 64,
+      "register": {
+        "gasUsed": "281864",
+        "latencyMs": 2488,
+        "txHash": "0xb58f2430aa6102c364e1e50a14bdbd00ab50544d473907e4a0795d8144c58ed1"
+      },
+      "latency": {
+        "localHashComputation_ms": {
+          "min": 0.0955,
+          "max": 0.159,
+          "avg": 0.10629000000000002,
+          "median": 0.09720000000000001
+        },
+        "ipfsRetrieval_miss_ms": 7450,
+        "ipfsRetrieval_hit_ms": 0,
+        "verifyAndBurn_real_ms": {
+          "min": 2338,
+          "max": 2649,
+          "avg": 2541,
+          "median": 2636
+        }
+      },
+      "gas": {
+        "verifyAndBurn_estimate": {
+          "min": 62773,
+          "max": 62851,
+          "avg": 62823.6,
+          "median": 62830
+        },
+        "verifyAndBurn_real": {
+          "min": 62010,
+          "max": 62022,
+          "avg": 62017.333333333336,
+          "median": 62020
+        },
+        "gasPriceWei": "20108000",
+        "gasPriceGwei": 0.020108
+      },
+      "realTxs": [
+        {
+          "leafIndex": 0,
+          "latencyMs": 2338,
+          "gasUsed": 62020,
+          "effectiveGasPriceWei": "20122000",
+          "txHash": "0x55efbcd16de3436f56d32c648efc0fc35d5aec673abc6d3a6b0fde93a553c5ed",
+          "blockNumber": 282015190
+        },
+        {
+          "leafIndex": 1,
+          "latencyMs": 2636,
+          "gasUsed": 62010,
+          "effectiveGasPriceWei": "20000000",
+          "txHash": "0xcc4b2b67945e0025440305fce03456c1362a8f7f53546bbf57a41c5ff43f3630",
+          "blockNumber": 282015200
+        },
+        {
+          "leafIndex": 2,
+          "latencyMs": 2649,
+          "gasUsed": 62022,
+          "effectiveGasPriceWei": "20082000",
+          "txHash": "0xcda00676d75e7bd5f323108e488a33fda15de0749fdc1bdb5a4849d59ae7eaa4",
+          "blockNumber": 282015211
+        }
+      ]
+    }
+  ]
+}
