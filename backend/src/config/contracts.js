@@ -2,29 +2,20 @@ require("dotenv").config();
 const { ethers } = require("ethers");
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ABIs are loaded directly from the compiled Hardhat artifacts so they ALWAYS
-// match the most recently compiled/deployed contracts. After any contract change
-// run `npx hardhat compile` in the blockchain folder and the backend picks up
-// the new ABI automatically — no manual editing of this file required.
+// ABIs are bundled with the backend as standalone JSON files in ./abi so the
+// backend is fully self-contained and deploys anywhere (Render, etc.) WITHOUT
+// needing the git-ignored blockchain/artifacts folder.
 //
-// NOTE: The blockchain/artifacts folder is git-ignored, so it only exists locally
-// after compiling. If you ever deploy the backend WITHOUT the blockchain folder
-// present (e.g. a standalone backend host), compile first and ship the artifacts,
-// or switch back to inline ABIs.
+// When you change a contract's INTERFACE (add/remove/rename a function or event,
+// or change its parameters), regenerate these files by running, from the repo root:
+//   npm run sync-abi   (defined in backend/package.json)
+// which recompiles the contracts and copies the fresh ABIs into ./abi.
+// A plain redeploy with no interface change only needs the address env vars
+// updated — the ABI stays identical.
 // ─────────────────────────────────────────────────────────────────────────────
-const ARTIFACTS_DIR = "../../../blockchain/artifacts/contracts";
-
-const GOVERNMENT_REGISTRY_ABI = require(
-  `${ARTIFACTS_DIR}/GovernmentRegistry.sol/GovernmentRegistry.json`
-).abi;
-
-const MANUFACTURER_BATCH_ABI = require(
-  `${ARTIFACTS_DIR}/ManufacturerBatch.sol/ManufacturerBatch.json`
-).abi;
-
-const SUPPLY_CHAIN_TRACKER_ABI = require(
-  `${ARTIFACTS_DIR}/SupplyChainTracker.sol/SupplyChainTracker.json`
-).abi;
+const GOVERNMENT_REGISTRY_ABI = require("../abi/GovernmentRegistry.json");
+const MANUFACTURER_BATCH_ABI = require("../abi/ManufacturerBatch.json");
+const SUPPLY_CHAIN_TRACKER_ABI = require("../abi/SupplyChainTracker.json");
 
 let _provider = null;
 let _govSigner = null;
