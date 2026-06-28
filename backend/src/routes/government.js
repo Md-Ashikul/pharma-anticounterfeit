@@ -236,6 +236,43 @@ router.post("/governance/proposals/:id/vote", async (req, res) => {
     // vote as another regulator (Account 2 / Account 3), pass their private key
     // as `regulatorKey` in the request body.
     const signer = regulatorKey ? getSignerFromKey(regulatorKey) : getGovSigner();
+    const voterAddress = await signer.getAddress();
+
+    // ── Pre-flight diagnostics ──────────────────────────────────────────────
+    // The #1 reason a second vote "doesn't upgrade" the proposal is that the
+    // key being used does NOT derive to an on-chain regulator address (so the
+    // contract reverts with NotARegulator), or it derives to the SAME address
+    // that already voted (so the approval count can't increase). Surface that
+    // clearly instead of a cryptic revert.
+    const readRegistry = getGovernmentRegistry();
+    const regulators = await readRegistry.getRegulators();
+    const threshold = Number(await readRegistry.getThreshold());
+    const isRegulator = regulators
+      .map((r) => r.toLowerCase())
+      .includes(voterAddress.toLowerCase());
+
+    if (!isRegulator) {
+      return res.status(400).json({
+        success: false,
+        error: `The key you supplied derives to ${voterAddress}, which is NOT an on-chain regulator. Approvals cannot increase.`,
+        voterAddress,
+        onChainRegulators: regulators,
+        hint: "Use the private key of one of the addresses listed in onChainRegulators (Account 2 or Account 3).",
+      });
+    }
+
+    const alreadyVoted = await readRegistry.hasVoted(id, voterAddress);
+    if (alreadyVoted) {
+      const proposalBefore = await readRegistry.getProposal(id);
+      return res.status(400).json({
+        success: false,
+        error: `${voterAddress} has already voted on proposal #${id}. Re-voting will not raise the approval count.`,
+        voterAddress,
+        currentApprovals: Number(proposalBefore.proposal.approvalsCount),
+        threshold,
+        hint: "Vote with a DIFFERENT regulator's key to reach the threshold.",
+      });
+    }
 
     const registry = getGovernmentRegistry(signer);
     const tx = await registry.voteOnProposal(id, vote);
@@ -254,13 +291,20 @@ router.post("/governance/proposals/:id/vote", async (req, res) => {
 
     const executed = !!proposalEvent;
 
+    // Read the post-vote approval tally so the client can see progress toward threshold.
+    const proposalAfter = await readRegistry.getProposal(id);
+    const currentApprovals = Number(proposalAfter.proposal.approvalsCount);
+
     res.json({
       success: true,
       message: executed
-        ? `Vote cast. Proposal #${id} auto-executed!`
-        : `Vote cast for proposal #${id}`,
+        ? `Vote cast by ${voterAddress}. Proposal #${id} auto-executed!`
+        : `Vote cast by ${voterAddress} for proposal #${id} (${currentApprovals}/${threshold} approvals)`,
       proposalId: id,
+      voterAddress,
       vote,
+      currentApprovals,
+      threshold,
       executed,
       txHash: receipt.hash,
     });
