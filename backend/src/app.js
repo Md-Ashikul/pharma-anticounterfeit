@@ -51,6 +51,23 @@ const verifyLimiter = rateLimit({
 app.use(defaultLimiter);
 app.use(express.json());
 
+// ─── Root / Index ─────────────────────────────────────────────────────────────
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    service: "Pharma Anti-Counterfeit Backend",
+    status:  "running",
+    network: process.env.ACTIVE_NETWORK || "sepolia",
+    endpoints: {
+      health:      "/health",
+      government:  "/api/government",
+      supplyChain: "/api/supply-chain",
+      consumer:    "/api/consumer",
+    },
+  });
+});
+
 // ─── Health Check ─────────────────────────────────────────────────────────────
 
 app.get("/health", (req, res) => {
