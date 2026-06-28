@@ -454,4 +454,5 @@ MIT License — see [LICENSE](LICENSE) file for details.
 - [Hardhat](https://hardhat.org/) — Ethereum development environment
 - [Pinata](https://pinata.cloud/) — IPFS pinning service
 - [Alchemy](https://alchemy.com/) — Blockchain infrastructure
-- [Ethers.js](https://ethers.org/) — Ethereum JavaScript library
+- [Ethers.js](https://ethers.org/) — Ethereum JavaScript library      
+
