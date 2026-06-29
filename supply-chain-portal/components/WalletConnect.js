@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ethers } from "ethers";
 import { buildSiweMessage } from "@/lib/siwe";
 import { useAuthStore } from "@/lib/store";
-import { govAPI } from "@/lib/api";
+import { govAPI, governanceWeb3 } from "@/lib/api";
 
 // ── Dynamic Layer 1 / Layer 2 Network Toggle Configuration ────────────────
 const ACTIVE_NETWORK = process.env.NEXT_PUBLIC_ACTIVE_NETWORK || "sepolia";
@@ -53,9 +53,18 @@ export default function WalletConnect() {
       const signature = await signer.signMessage(message);
       setSiweSession(message, signature);
 
-      // Check if government wallet
-      const GOV_WALLET = "0x60A05eb194b85eED4233f879af3F98d2d064f9a8";
-      if (address.toLowerCase() === GOV_WALLET.toLowerCase()) {
+      // Determine role. Regulators are read dynamically from the on-chain
+      // consortium list (GovernmentRegistry.getRegulators), so any of the
+      // current regulator wallets is recognized as Government — no hardcoded
+      // address, and it stays correct when regulators are added/removed.
+      let isRegulator = false;
+      try {
+        isRegulator = await governanceWeb3.isRegulator(address);
+      } catch (e) {
+        console.log("[v0] regulator lookup failed:", e.message);
+      }
+
+      if (isRegulator) {
         const { setGovernment } = useAuthStore.getState();
         setGovernment();
       } else {
