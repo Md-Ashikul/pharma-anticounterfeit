@@ -164,8 +164,8 @@ async function main() {
   // 6. Supply-chain wallets (overridable via env). Roles: 1=Mfg, 2=Dist, 3=Retail.
   const manufacturerAddress =
     process.env.MANUFACTURER_ADDRESS || "0x4dEE81d53d984F6B1F3d6Ca9c4F2023E825E939F";
-  const distributorAddress = process.env.DISTRIBUTOR_ADDRESS || "0xD528...REPLACE_ME";
-  const retailerAddress = process.env.RETAILER_ADDRESS || "0x....REPLACE_ME";
+  const distributorAddress = process.env.DISTRIBUTOR_ADDRESS || "0xD528413aa036E01b86D416c38887E2F68889cF64";
+  const retailerAddress = process.env.RETAILER_ADDRESS || "0x3Ef9b20cb9aaA19191b40Eac70903c93A5728E75";
 
   const entities = [
     { address: manufacturerAddress, name: "PharmaCorp Ltd", license: "MFG-001", role: 1 },

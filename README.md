@@ -422,7 +422,7 @@ This system is the implementation of a research paper submitted to IEEE. Key con
 - [ ] Layer-2 integration (Polygon/Arbitrum)
 - [ ] DID integration
 - [ ] AI-based anomaly detection
-- [ ] Mobile QR scanner integration
+- [ ] Mobile QR scanner integration   
 
 ---
 
@@ -455,4 +455,3 @@ MIT License — see [LICENSE](LICENSE) file for details.
 - [Pinata](https://pinata.cloud/) — IPFS pinning service
 - [Alchemy](https://alchemy.com/) — Blockchain infrastructure
 - [Ethers.js](https://ethers.org/) — Ethereum JavaScript library      
-

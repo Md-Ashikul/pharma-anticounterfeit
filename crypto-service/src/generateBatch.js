@@ -41,12 +41,12 @@ const networkLabel = isArbitrum ? "ARBITRUM SEPOLIA (L2)" : "ETHEREUM SEPOLIA (L
 // ─── BATCH CONFIGURATION ─────────────────────────────────────────────────────
 // Note: Changed outputDir to include targetArg so L1 and L2 data stay separated
 const CONFIG = {
-  batchId:    "COMP-ARB-B2", 
+  batchId:    "COMP-ARB-B3", 
   drugName:   "Paracetamol 500mg",
   stripCount: 10,
   expiryDate: "2027-12-31",
   appBaseUrl: process.env.APP_BASE_URL,
-  outputDir:  path.join(__dirname, "../output", targetArg, "COMP-ARB-B2"),
+  outputDir:  path.join(__dirname, "../output", targetArg, "COMP-ARB-B3"),
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
