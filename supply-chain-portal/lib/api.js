@@ -162,19 +162,38 @@ export const governanceWeb3 = {
     return await tx.wait();
   },
 
-  // ── Proposal discovery (read via ProposalCreated event logs) ─────────────
+  // ── Proposal discovery (read via sequential getProposal calls) ───────────
+  // NOTE: We intentionally do NOT use queryFilter / eth_getLogs here. Free-tier
+  // RPC providers cap eth_getLogs to a ~10-block range, so a "fromBlock 0 →
+  // latest" scan fails with a -32600 error once the chain advances past 10
+  // blocks. Instead we walk proposal IDs sequentially (the contract assigns
+  // them 1, 2, 3, … via _nextProposalId) using getProposal(), which is a plain
+  // eth_call with no block-range limit. We stop at the first empty slot
+  // (proposal.id === 0), since IDs are never skipped or deleted.
   async listProposals() {
     const c         = getGovReadContract();
     const threshold = Number(await c.getThreshold());
-    const logs      = await c.queryFilter(c.filters.ProposalCreated(), GOV_DEPLOY_BLOCK, "latest");
 
     const proposals = [];
-    for (const log of logs) {
-      const id = log.args.proposalId;
-      const data = await c.getProposal(id);
+    // Safety cap to avoid an unbounded loop if something unexpected happens.
+    const MAX_PROPOSALS = 1000;
+
+    for (let id = 1; id <= MAX_PROPOSALS; id++) {
+      let data;
+      try {
+        data = await c.getProposal(id);
+      } catch (err) {
+        // A revert/decoding issue on a single id shouldn't kill the whole list.
+        console.error(`[v0] getProposal(${id}) failed:`, err?.shortMessage || err?.message);
+        break;
+      }
+
       const p = data.proposal;
+      // Empty slot → we've reached the end of created proposals.
+      if (!p || Number(p.id) === 0) break;
+
       proposals.push({
-        id:             id.toString(),
+        id:             p.id.toString(),
         action:         Number(p.action),
         targetEntity:   p.targetEntity,
         proposalData:   p.proposalData,
@@ -187,6 +206,7 @@ export const governanceWeb3 = {
         threshold,
       });
     }
+
     // newest first
     return proposals.reverse();
   },
